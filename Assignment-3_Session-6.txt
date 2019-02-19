@@ -1,0 +1,55 @@
+Assignment-3_Session-6
+
+Problem Statement:
+
+1. Use the given link Data Set.
+
+Answer the below questions:
+
+a. Perform ANOVA test on the discriminant analysis scores of nuclear localization signals of both nuclear
+and non-nuclear proteins by class variables(Target).
+Answer-
+# Null Hypothesis : Scores across the class variables is same.
+# Alternate Hypothesis : Scores across the class variable(Target) is not same.
+
+x <- aov(nuc~Target_V, data = yeast_data)
+summary(x)
+
+# Result
+              Df Sum Sq Mean Sq F value Pr(>F)    
+Target_V       9   1.99 0.22110   21.97 <2e-16 ***
+Residuals   1473  14.82 0.01006                   
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+# Since p value is less than 0.05, scores across the class variables is not same at 95% confidence interval.
+
+b. Which class is significantly different from others?
+Answer-
+TukeyHSD(x)
+# ERL is significantly different from others.
+
+# Alternative approac using clustering
+# using clustering
+library(fastDummies)
+dummy_yeast <- fastDummies::dummy_cols(yeast_data[,2:10], remove_original=TRUE)
+head(dummy_yeast)
+str(dummy_yeast)
+colnames(dummy_yeast)
+dummy_yeast1 <- dummy_yeast[,c('mcg',"gvh", "alm", "mit", 'vac', 'nuc', "erl_0.5", "erl_1", "pox_0", "pox_0.5",
+                              "pox_0.83", "Target_V_MIT", "Target_V_NUC", "Target_V_CYT", "Target_V_ME1",
+                              "Target_V_EXC", "Target_V_ME2", "Target_V_ME3", "Target_V_VAC", "Target_V_POX", "Target_V_ERL")]
+
+scale_dummy <- scale(dummy_yeast1)
+
+mydata <- scale_dummy
+wss <- (nrow(mydata)-1)*sum(apply(mydata,2,var))
+for (i in 1:40) wss[i] <- sum(kmeans(mydata,
+                                     centers=i)$withinss)
+plot(1:40, wss, type="b", xlab="Number of Clusters",
+     ylab="Within groups sum of squares")
+
+km <- kmeans(dummy_yeast1, 9)
+yeast_data$cluster <- km$cluster
+yeast_data$cluster <- as.factor(yeast_data$cluster)
+table(yeast_data$Target_V, yeast_data$cluster)
